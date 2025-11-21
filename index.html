@@ -1,0 +1,251 @@
+<!DOCTYPE html><html lang="id"><head>
+    <meta charset="UTF-8">
+    <title>Login - Sistem Absensi</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="shortcut icon" href="images/logo.png" type="image/x-icon">
+
+    <!-- Bootstrap & Icons -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <link href="css/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .top-section {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 22vh;            /* tinggi area atas */
+            background-image: url('images/bg-login.jpg');
+            background-size: cover;
+            background-position: center;
+            color: white;
+            z-index: 1000;
+            
+            /* Hilangkan padding, gunakan flex untuk tengah-tengah vertikal */
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .logo {
+            max-width: 90px; /* maksimal lebar logo */
+            height: auto;    /* tinggi otomatis */
+            /*margin-bottom: 10px;  jarak bawah logo ke teks */
+        }
+        
+        .bottom-section {
+            margin-top: 22vh; /* Jarak sama dengan tinggi top-section */
+            background-color: #E8E8E8;
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            padding: 40px 20px;
+        }
+    
+        .login {
+            margin-top: 11vh; /* Turun sekitar 10% dari tinggi viewport */
+            width: 100%;
+            max-width: 600px; /* bisa diatur lebih besar jika mau */
+        }
+    
+        .form-floating .form-control {
+            background-color: #BCBCBC;
+            border: none;
+            border-bottom: 2px solid #ccc; /* garis bawah default */
+            border-radius: 0; /* hilangkan radius */
+            box-shadow: none; /* hilangkan shadow default */
+            padding-left: 1;
+            padding-right: 1;
+            height: 60px;
+        }
+        
+        .form-floating .form-control:focus {
+            background-color: #BCBCBC;
+            outline: none;
+            border-bottom: 2px solid #0053ba; /* warna garis bawah saat fokus, bisa diganti */
+            box-shadow: none;
+        }
+    
+        .d-grid {
+            width: 100%;
+        }
+    
+        .toggle-password {
+            cursor: pointer;
+        }
+        .btn-primary {
+            height: 48px;           /* atur tinggi tombol */
+            background-color: #0053ba; /* warna latar tombol */
+            border-color: #0000AF;     /* warna border tombol */
+            color: #fff;               /* warna teks tombol */
+            font-weight: 600;          /* supaya teks agak tebal */
+        }
+        
+        .btn-primary:hover, 
+        .btn-primary:focus {
+            background-color: #0053ba; /* warna saat hover/fokus */
+            border-color: #004bb5;
+            color: #fff;
+        }
+
+        @media (max-width: 576px) {
+            .top-section {
+                padding: 30px 15px 50px;
+            }
+
+            .bottom-section {
+                padding: 30px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- Top Section -->
+<div class="top-section">
+    <div class="logo">
+        <img src="images/logo.png" alt="Logo" class="logo">
+    </div>
+</div>
+
+<!-- Bottom Section -->
+<div class="bottom-section">
+    <div class="login">
+        <form method="post" action="/login" id="loginForm">
+            <input type="hidden" name="csrf_test_name" value="e961a4e4123dd521e3bf0cc29dca4e6b">
+            <!-- Username -->
+            <div class="form-floating mb-3">
+                <input type="tel" pattern="[0-9]*" inputmode="numeric" name="username" id="username" class="form-control" placeholder="Masukkan username" required="">
+                <label for="username">Username</label>
+            </div>
+
+            <!-- Password -->
+            <div class="form-floating mb-3 position-relative">
+                <input type="password" name="password" id="password" class="form-control" placeholder="Masukkan password" required="">
+                <label for="password">Password</label>
+                <span class="position-absolute top-50 end-0 translate-middle-y pe-3 toggle-password" onclick="togglePassword('#password', this)">
+                    <i class="bi bi-eye-fill fs-2 text-secondary"></i>
+                </span>
+            </div>
+
+            <!-- Device ID -->
+            <input type="hidden" name="device_id" id="device_id">
+
+            <!-- Submit -->
+            <div class="d-grid">
+                <button type="submit" class="btn btn-primary fw-bold">LOGIN</button>
+            </div>
+        </form>
+
+        <div class="copyright mt-4 text-center text-muted">
+            2025 � E-Presensi SMAN 1 Parengan Tuban
+        </div>
+    </div>
+</div>
+
+<!-- JS Libraries -->
+<script src="js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script src="js/api.js" async="" defer=""></script>
+<script src="https://openfpcdn.io/fingerprintjs/v3"></script>
+
+<!-- Flash Message -->
+
+
+<!-- Toggle Password -->
+<script>
+function togglePassword(selector, iconElement) {
+    const input = document.querySelector(selector);
+    const icon = iconElement.querySelector('i');
+    if (input.type === "password") {
+        input.type = "text";
+        icon.classList.remove('bi-eye-fill');
+        icon.classList.add('bi-eye-slash-fill');
+    } else {
+        input.type = "password";
+        icon.classList.remove('bi-eye-slash-fill');
+        icon.classList.add('bi-eye-fill');
+    }
+}
+</script>
+
+<!-- Device ID & Fingerprint -->
+<script>
+window.onload = function() {
+    const deviceInput = document.getElementById('device_id');
+    let deviceSet = false;
+    let storedDeviceId = localStorage.getItem('device_id');
+
+    if (storedDeviceId) {
+        deviceInput.value = storedDeviceId;
+        deviceSet = true;
+    }
+
+    const timeout = setTimeout(() => {
+        if (!deviceSet) {
+            const randomId = generateRandomId();
+            deviceInput.value = randomId;
+            localStorage.setItem('device_id', randomId);
+            deviceSet = true;
+        }
+    }, 2000);
+
+    if (!deviceSet) {
+        FingerprintJS.load().then(fp => {
+            fp.get().then(result => {
+                if (!deviceSet) {
+                    deviceInput.value = result.visitorId;
+                    localStorage.setItem('device_id', result.visitorId);
+                    deviceSet = true;
+                    clearTimeout(timeout);
+                }
+            }).catch(() => {
+                fallbackDeviceId();
+            });
+        }).catch(() => {
+            fallbackDeviceId();
+        });
+    }
+
+    function fallbackDeviceId() {
+        if (!deviceSet) {
+            const randomId = generateRandomId();
+            deviceInput.value = randomId;
+            localStorage.setItem('device_id', randomId);
+            deviceSet = true;
+            clearTimeout(timeout);
+        }
+    }
+
+    document.getElementById('loginForm').addEventListener('submit', function(e) {
+        if (!deviceInput.value) {
+            e.preventDefault();
+            alert('Mohon tunggu hingga perangkat dikenali.');
+        }
+    });
+};
+
+function generateRandomId(length = 32) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    let result = '';
+    for (let i = 0; i < length; i++) {
+        result += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return result;
+}
+</script>
+
+
+
+</body></html>
